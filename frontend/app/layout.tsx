@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import "./globals.css";
-import Providers from "./providers";
+
+// WalletConnect accesses indexedDB which is browser-only — must not SSR
+const Providers = dynamic(() => import("./providers"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "ShieldFi — Confidential Insurance Protocol",
