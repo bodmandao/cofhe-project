@@ -1,60 +1,59 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Lock, ShieldCheck } from "lucide-react";
-import { clsx } from "clsx";
-
 type Status = "encrypted" | "encrypting" | "decrypted" | "computing";
 
-const config: Record<Status, { label: string; color: string; icon: React.ReactNode; pulse: boolean }> = {
+const cfg: Record<Status, { label: string; color: string; dot: string }> = {
   encrypted: {
-    label: "FHE Encrypted",
-    color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",
-    icon: <Lock size={11} />,
-    pulse: false,
+    label: "FHE ENCRYPTED",
+    color: "rgba(0,255,136,0.08)",
+    dot:   "var(--green)",
   },
   encrypting: {
-    label: "Encrypting…",
-    color: "text-cyan-300 border-cyan-400/40 bg-cyan-400/10",
-    icon: <Lock size={11} />,
-    pulse: true,
+    label: "ENCRYPTING…",
+    color: "rgba(0,255,136,0.12)",
+    dot:   "var(--green)",
   },
   decrypted: {
-    label: "Revealed",
-    color: "text-green-400 border-green-500/30 bg-green-500/10",
-    icon: <ShieldCheck size={11} />,
-    pulse: false,
+    label: "REVEALED",
+    color: "rgba(96,165,250,0.1)",
+    dot:   "var(--blue)",
   },
   computing: {
-    label: "FHE Computing…",
-    color: "text-violet-400 border-violet-500/30 bg-violet-500/10",
-    icon: <Lock size={11} />,
-    pulse: true,
+    label: "FHE COMPUTING…",
+    color: "rgba(167,139,250,0.1)",
+    dot:   "var(--violet)",
   },
 };
 
 export default function EncryptionBadge({
   status = "encrypted",
-  className,
+  className = "",
 }: {
   status?: Status;
   className?: string;
 }) {
-  const { label, color, icon, pulse } = config[status];
+  const { label, color, dot } = cfg[status];
+  const isAnimated = status === "encrypting" || status === "computing";
 
   return (
-    <motion.span
-      className={clsx(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border",
-        color,
-        pulse && "encrypt-pulse",
-        className,
-      )}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <span
+      className={`inline-flex items-center gap-1.5 mono text-[9px] tracking-widest font-medium px-2 py-0.5 ${className}`}
+      style={{
+        background: color,
+        border: `1px solid ${dot}30`,
+        color: dot,
+      }}
     >
-      {icon}
+      <span
+        style={{
+          width: 5, height: 5, borderRadius: "50%",
+          background: dot,
+          display: "inline-block",
+          boxShadow: `0 0 5px ${dot}`,
+          animation: isAnimated ? "pulse-dot 1.2s ease-in-out infinite" : undefined,
+        }}
+      />
       {label}
-    </motion.span>
+    </span>
   );
 }

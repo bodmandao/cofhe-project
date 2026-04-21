@@ -7,30 +7,21 @@ interface GlassCardProps {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
-  glow?: "cyan" | "purple" | "green" | "none";
+  glow?: "cyan" | "purple" | "green" | "amber" | "none";
   onClick?: () => void;
   animate?: boolean;
+  accent?: boolean;
 }
 
 export default function GlassCard({
-  children,
-  className,
-  hover = false,
-  glow = "none",
-  onClick,
-  animate = false,
+  children, className, hover = false, glow = "none",
+  onClick, animate = false, accent = false,
 }: GlassCardProps) {
-  const glowClass = {
-    cyan:   "glow-cyan",
-    purple: "glow-purple",
-    green:  "glow-green",
-    none:   "",
-  }[glow];
-
   const base = clsx(
-    "glass",
-    hover && "glass-hover cursor-pointer",
-    glowClass,
+    "panel",
+    accent || glow === "cyan" || glow === "green" ? "panel-accent" : "",
+    glow === "amber" && "panel-amber",
+    hover && "row-hover cursor-pointer",
     className,
   );
 
@@ -39,19 +30,14 @@ export default function GlassCard({
       <motion.div
         className={base}
         onClick={onClick}
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        whileHover={hover ? { scale: 1.01 } : undefined}
+        transition={{ duration: 0.35, ease: "easeOut" }}
       >
         {children}
       </motion.div>
     );
   }
 
-  return (
-    <div className={base} onClick={onClick}>
-      {children}
-    </div>
-  );
+  return <div className={base} onClick={onClick}>{children}</div>;
 }

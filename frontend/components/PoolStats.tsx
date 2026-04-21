@@ -3,38 +3,17 @@
 import { useReadContract } from "wagmi";
 import { arbitrumSepolia } from "wagmi/chains";
 import { formatEther } from "viem";
-import { motion } from "framer-motion";
-import { TrendingUp, Users, ShieldCheck, Coins } from "lucide-react";
-import GlassCard from "./ui/GlassCard";
 import { INSURANCE_ABI } from "@/utils/abi";
 import { CONTRACT_ADDRESSES } from "@/utils/constants";
 
-function Stat({
-  label,
-  value,
-  icon,
-  delay,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  delay: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4 }}
-      className="flex flex-col gap-1"
-    >
-      <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-        {icon}
-        <span>{label}</span>
-      </div>
-      <span className="text-2xl font-bold text-white">{value}</span>
-    </motion.div>
-  );
-}
+const ROWS = [
+  { key: "balance",  label: "POOL BALANCE",      fmt: (v: bigint) => `${parseFloat(formatEther(v)).toFixed(4)} ETH`, public: true },
+  { key: "policies", label: "TOTAL POLICIES",    fmt: (v: bigint) => v.toString(),                                    public: true },
+  { key: "active",   label: "ACTIVE POLICIES",   fmt: (v: bigint) => v.toString(),                                    public: true },
+  { key: "claims",   label: "CLAIMS FILED",      fmt: (v: bigint) => v.toString(),                                    public: true },
+  { key: "approved", label: "APPROVED CLAIMS",   fmt: (v: bigint) => v.toString(),                                    public: true },
+  { key: "payouts",  label: "TOTAL PAYOUTS",     fmt: (v: bigint) => `${parseFloat(formatEther(v)).toFixed(4)} ETH`, public: true },
+];
 
 export default function PoolStats({ chainId = arbitrumSepolia.id }: { chainId?: number }) {
   const address = CONTRACT_ADDRESSES[chainId];
@@ -45,59 +24,49 @@ export default function PoolStats({ chainId = arbitrumSepolia.id }: { chainId?: 
     functionName: "getPoolStats",
   });
 
-  const [balance, policies, active, claims, approved, payouts] = (stats as bigint[]) ?? [
-    0n, 0n, 0n, 0n, 0n, 0n,
-  ];
+  const [balance = BigInt(0), policies = BigInt(0), active = BigInt(0), claims = BigInt(0), approved = BigInt(0), payouts = BigInt(0)] =
+    ((stats as unknown) as bigint[]) ?? [];
+
+  const values = [balance, policies, active, claims, approved, payouts];
 
   return (
-    <GlassCard className="p-6" animate glow="cyan">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-white">Protocol Stats</h2>
-        <span className="text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
-          Public aggregates only
+    <div className="panel overflow-hidden">
+      {/* Header */}
+      <div
+        className="px-4 py-3 flex items-center justify-between mono text-[10px] tracking-widest"
+        style={{ borderBottom: "1px solid var(--border)", color: "var(--gray-1)" }}
+      >
+        <span style={{ color: "var(--green)" }}>// LIVE PROTOCOL STATE</span>
+        <span
+          className="px-2 py-0.5"
+          style={{ background: "rgba(0,255,136,0.07)", border: "1px solid var(--border-str)", color: "var(--green)", fontSize: 9 }}
+        >
+          PUBLIC AGGREGATES ONLY
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-        <Stat
-          label="Pool Balance"
-          value={`${parseFloat(formatEther(balance)).toFixed(3)} ETH`}
-          icon={<Coins size={12} />}
-          delay={0}
-        />
-        <Stat
-          label="Total Policies"
-          value={policies.toString()}
-          icon={<Users size={12} />}
-          delay={0.05}
-        />
-        <Stat
-          label="Active Policies"
-          value={active.toString()}
-          icon={<ShieldCheck size={12} />}
-          delay={0.1}
-        />
-        <Stat
-          label="Claims Filed"
-          value={claims.toString()}
-          icon={<TrendingUp size={12} />}
-          delay={0.15}
-        />
-        <Stat
-          label="Approved Claims"
-          value={approved.toString()}
-          icon={<ShieldCheck size={12} />}
-          delay={0.2}
-        />
-        <Stat
-          label="Total Payouts"
-          value={`${parseFloat(formatEther(payouts)).toFixed(4)} ETH`}
-          icon={<Coins size={12} />}
-          delay={0.25}
-        />
+
+      {/* Data rows */}
+      {ROWS.map(({ label, fmt }, i) => (
+        <div
+          key={label}
+          className="px-4 py-2.5 flex items-center justify-between row-hover"
+          style={{ borderBottom: i < ROWS.length - 1 ? "1px solid var(--border)" : "none" }}
+        >
+          <span className="mono text-[10px] tracking-widest" style={{ color: "var(--gray-1)" }}>
+            {label}
+          </span>
+          <span className="mono text-sm font-bold" style={{ color: "var(--white)" }}>
+            {fmt(values[i])}
+          </span>
+        </div>
+      ))}
+
+      <div
+        className="px-4 py-2 mono text-[9px] tracking-wider"
+        style={{ color: "var(--gray-2)", borderTop: "1px solid var(--border)", background: "rgba(0,255,136,0.02)" }}
+      >
+        individual risk data fully encrypted — only totals public
       </div>
-      <p className="mt-5 text-xs text-slate-600 border-t border-white/5 pt-4">
-        Individual policies, risk profiles, and claim amounts are fully encrypted — only aggregate totals are public.
-      </p>
-    </GlassCard>
+    </div>
   );
 }
