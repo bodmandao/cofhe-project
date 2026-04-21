@@ -12,10 +12,15 @@ const config: HardhatUserConfig = {
     logMocks: true,
     gasWarning: true,
   },
-  solidity: {
+   solidity: {
     version: "0.8.28",
     settings: {
       evmVersion: "cancun",
+      viaIR: true,
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
     },
   },
   defaultNetwork: "hardhat",

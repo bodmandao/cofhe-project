@@ -3,24 +3,6 @@ pragma solidity ^0.8.25;
 
 import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
-/**
- * @title  ConfidentialInsurance — ShieldFi Protocol
- * @notice Privacy-preserving insurance where risk factors, coverage amounts,
- *         and premiums are computed entirely on FHE ciphertexts.
- *         No plaintext risk data ever enters the contract.
- *
- * FHE operations used:
- *   asEuint64  — wrap encrypted inputs and constants
- *   mul        — risk component (riskScore × coverage)
- *   div        — normalise by RISK_DENOMINATOR
- *   add        — premium = BASE + riskComponent
- *   lte        — claim ≤ coverage validation
- *   gte        — severity ≥ threshold validation
- *   and        — combine validity conditions
- *   select     — tier payout by severity level
- *   allowThis/allowSender/allowPublic — ACL management
- *   publishDecryptResult / getDecryptResultSafe — async reveal
- */
 contract ConfidentialInsurance {
 
     // ── Constants ──────────────────────────────────────────────────────────
@@ -52,7 +34,7 @@ contract ConfidentialInsurance {
         euint64     encryptedClaimAmount; // encrypted — only claimant can read
         euint64     encryptedSeverity;    // encrypted — only claimant can read
         euint64     encryptedPayout;      // FHE.select result — tiered by severity
-        ebool       isValid;              // FHE.and(amountValid, severityValid)
+        euint8      isValid;             // 1 = valid, 0 = invalid (euint8: publishDecryptResult supported)
         ClaimStatus status;
         uint256     filedAt;
     }
@@ -220,7 +202,9 @@ contract ConfidentialInsurance {
         // ── FHE Claim Validation ───────────────────────────────────────────
         ebool amountValid   = FHE.lte(claimAmount, policies[policyId].encryptedCoverage);
         ebool severityValid = FHE.gte(severity, FHE.asEuint64(MIN_SEVERITY));
-        ebool isValid       = FHE.and(amountValid, severityValid);
+        ebool isValidBool   = FHE.and(amountValid, severityValid);
+        // Convert ebool → euint8 so publishDecryptResult is supported (no ebool overload)
+        euint8 isValid = FHE.select(isValidBool, FHE.asEuint8(uint8(1)), FHE.asEuint8(uint8(0)));
 
         // ── FHE Tiered Payout Selection ────────────────────────────────────
         euint64 halfPayout = FHE.div(claimAmount, FHE.asEuint64(uint64(2)));
@@ -261,7 +245,7 @@ contract ConfidentialInsurance {
      */
     function publishClaimValidity(
         uint256 claimId,
-        uint32  plaintext,
+        uint8   plaintext,
         bytes calldata signature
     ) external {
         Claim storage c = claims[claimId];
@@ -322,18 +306,28 @@ contract ConfidentialInsurance {
     // ── Premium Reveal (3-step CoFHE flow) ────────────────────────────────
 
     /**
-     * @notice Grant public decrypt permission then publish the revealed premium.
-     * @dev    Call flow: allowPublic → decryptForTx (off-chain SDK) → revealPremium.
-     *         After this call the holder can read their premium units via getRevealedPremium().
+     * @notice Step 1 — grant public decrypt ACL so the CoFHE SDK can decrypt off-chain.
+     * @dev    Call this first. Then call the SDK's decryptForTx off-chain to get the
+     *         (plaintext, signature) pair. Then call revealPremium with those values.
+     */
+    function requestPremiumReveal(uint256 policyId) external onlyHolder(policyId) {
+        FHE.allowPublic(policies[policyId].encryptedPremium);
+    }
+
+    /**
+     * @notice Step 3 — publish the CoFHE threshold-signed plaintext on-chain.
+     * @dev    Call flow:
+     *           (1) requestPremiumReveal(policyId)      — grants public ACL
+     *           (2) sdk.decryptForTx(handle).execute()  — off-chain threshold decrypt
+     *           (3) revealPremium(policyId, value, sig) — publishes result on-chain
+     *         After this the holder reads their premium via getRevealedPremium().
      */
     function revealPremium(
         uint256 policyId,
         uint64  plaintext,
         bytes calldata signature
     ) external onlyHolder(policyId) {
-        Policy storage p = policies[policyId];
-        FHE.allowPublic(p.encryptedPremium);
-        FHE.publishDecryptResult(p.encryptedPremium, plaintext, signature);
+        FHE.publishDecryptResult(policies[policyId].encryptedPremium, plaintext, signature);
     }
 
     /**
@@ -411,7 +405,7 @@ contract ConfidentialInsurance {
      * @notice Returns the raw encrypted handles for a claim.
      */
     function getClaimHandles(uint256 claimId) external view
-        returns (euint64 amount, euint64 severity, euint64 payout, ebool valid)
+        returns (euint64 amount, euint64 severity, euint64 payout, euint8 valid)
     {
         if (claims[claimId].claimant == address(0)) revert ClaimNotFound(claimId);
         Claim storage c = claims[claimId];
