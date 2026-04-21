@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
+import ProvidersWrapper from "./providers-wrapper";
 import "./globals.css";
-
-// WalletConnect accesses indexedDB which is browser-only — must not SSR
-const Providers = dynamic(() => import("./providers"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "ShieldFi — Confidential Insurance Protocol",
@@ -25,9 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="orb orb-1" aria-hidden />
         <div className="orb orb-2" aria-hidden />
         <div className="orb orb-3" aria-hidden />
-        <Providers>
+        <ProvidersWrapper>
           <div className="relative z-10">{children}</div>
-        </Providers>
+        </ProvidersWrapper>
       </body>
     </html>
   );

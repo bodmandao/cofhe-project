@@ -4,9 +4,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     // Stub Node.js built-ins that WalletConnect tries to import in browser bundles
     resolveAlias: {
-      fs:  false,
-      net: false,
-      tls: false,
+      fs:  "./shims/empty.js",
+      net: "./shims/empty.js",
+      tls: "./shims/empty.js",
     },
   },
 };
