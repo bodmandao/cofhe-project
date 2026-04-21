@@ -20,12 +20,12 @@ task('deploy-insurance', 'Deploy the ConfidentialInsurance (ShieldFi) contract')
     console.log(`\n✅  ConfidentialInsurance deployed: ${addr}`)
 
     // Fund the pool
-    const fundAmount = ethers.parseEther(args.fund)
-    if (fundAmount > 0n) {
-      const tx = await insurance.fundPool({ value: fundAmount })
-      await tx.wait()
-      console.log(`💰  Pool funded with ${args.fund} ETH`)
-    }
+    // const fundAmount = ethers.parseEther(args.fund)
+    // if (fundAmount > 0n) {
+    //   const tx = await insurance.fundPool({ value: fundAmount })
+    //   await tx.wait()
+    //   console.log(`💰  Pool funded with ${args.fund} ETH`)
+    // }
 
     saveDeployment(network.name, 'ConfidentialInsurance', addr)
 
