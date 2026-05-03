@@ -272,17 +272,20 @@ describe("ConfidentialInsurance — ShieldFi", function () {
       ]).execute();
       await insurance.connect(alice).registerPolicy(enc[0], enc[1], enc[2]);
 
-      // Step 1: decrypt off-chain via CoFHE SDK
+      // Step 1 (on-chain): grant public ACL so CoFHE SDK can decrypt off-chain
+      await insurance.connect(alice).requestPremiumReveal(1n);
+
+      // Step 2 (off-chain): CoFHE SDK decrypts and returns signed plaintext
       const [,,, premiumHandle] = await insurance.getPolicyHandles(1n);
       const result = await clientAlice
         .decryptForTx(premiumHandle)
         .withoutPermit()
         .execute();
 
-      // Step 2: publish result on-chain
+      // Step 3 (on-chain): publish signed result
       await insurance.connect(alice).revealPremium(1n, result.decryptedValue, result.signature);
 
-      // Step 3: read revealed value
+      // Verify the revealed value
       const [units, ready] = await insurance.getRevealedPremium(1n);
       expect(ready).to.be.true;
       expect(units).to.equal(55n);
