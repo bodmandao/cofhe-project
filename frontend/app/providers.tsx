@@ -1,10 +1,11 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, createConfig, http } from "wagmi";
+import { WagmiProvider, getDefaultConfig, useWalletClient, usePublicClient, http } from "wagmi";
 import { arbitrumSepolia, sepolia } from "wagmi/chains";
-import { RainbowKitProvider, getDefaultConfig, darkTheme } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
+import { CofheProvider, useCofheAutoConnect } from "@cofhe/react";
 
 const config = getDefaultConfig({
   appName: "ShieldFi — Confidential Insurance",
@@ -22,18 +23,31 @@ const queryClient = new QueryClient({
 });
 
 const rainbowTheme = darkTheme({
-  accentColor: "#00e5ff",
-  accentColorForeground: "#07091a",
-  borderRadius: "medium",
+  accentColor: "#00ff88",
+  accentColorForeground: "#04050d",
+  borderRadius: "none",
   fontStack: "system",
 });
+
+function CofheAutoConnector() {
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+  useCofheAutoConnect({
+    walletClient: walletClient ?? undefined,
+    publicClient: publicClient ?? undefined,
+  });
+  return null;
+}
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowTheme}>
-          {children}
+          <CofheProvider queryClient={queryClient}>
+            <CofheAutoConnector />
+            {children}
+          </CofheProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
