@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract, useChainId } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import EncryptionBadge from "@/components/ui/EncryptionBadge";
 import { Toaster, toast } from "sonner";
-import { MIN_SEVERITY, TIER_MID, coverageToEth } from "@/utils/constants";
+import { useCofheEncrypt } from "@cofhe/react";
+import { Encryptable } from "@cofhe/sdk";
+import { INSURANCE_ABI } from "@/utils/abi";
+import { MIN_SEVERITY, TIER_MID, coverageToEth, CONTRACT_ADDRESSES } from "@/utils/constants";
 
 type Step = "form" | "encrypting" | "done";
 
@@ -37,8 +40,9 @@ function OpRow({
 
 export default function NewClaimPage() {
   const { isConnected } = useAccount();
-  const router   = useRouter();
-  const params   = useSearchParams();
+  const chainId = useChainId();
+  const router  = useRouter();
+  const params  = useSearchParams();
 
   const [step, setStep]         = useState<Step>("form");
   const [pid, setPid]           = useState(params.get("policy") ?? "");
@@ -46,6 +50,10 @@ export default function NewClaimPage() {
   const [severity, setSeverity] = useState(60);
   const [txHash, setTxHash]     = useState("");
   const [claimId, setClaimId]   = useState<number | null>(null);
+
+  const { encryptInputsAsync } = useCofheEncrypt();
+  const { writeContractAsync }  = useWriteContract();
+  const address = CONTRACT_ADDRESSES[chainId];
 
   const isHighTier  = severity >= TIER_MID;
   const isMinSev    = severity >= MIN_SEVERITY;
@@ -63,12 +71,22 @@ export default function NewClaimPage() {
     if (!pid)          { toast.error("Enter a policy ID."); return; }
     setStep("encrypting");
     try {
-      await new Promise(r => setTimeout(r, 2200));
-      toast.success("Claim data encrypted with FHE!");
-      await new Promise(r => setTimeout(r, 1500));
-      const id = Math.floor(Math.random() * 500) + 1;
-      setClaimId(id);
-      setTxHash("0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""));
+      // FHE-encrypt claim amount and severity client-side
+      const [encAmount, encSeverity] = await encryptInputsAsync([
+        Encryptable.uint64(BigInt(amount)),
+        Encryptable.uint64(BigInt(severity)),
+      ]);
+      toast.success("Claim data FHE-encrypted — sending transaction…");
+
+      const hash = await writeContractAsync({
+        address,
+        abi: INSURANCE_ABI,
+        functionName: "fileClaim",
+        args: [BigInt(pid), encAmount as any, encSeverity as any],
+      });
+
+      setTxHash(hash);
+      setClaimId(1); // will be parsed from receipt once contract is deployed
       setStep("done");
     } catch (err: any) {
       toast.error(err?.message ?? "Failed");
