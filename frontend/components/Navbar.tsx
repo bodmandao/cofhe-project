@@ -10,6 +10,7 @@ const NAV = [
   { href: "/dashboard",  label: "DASHBOARD" },
   { href: "/policy/new", label: "GET INSURED" },
   { href: "/claims/new", label: "FILE CLAIM" },
+  { href: "/explore",    label: "FHE EXPLORER" },
 ];
 
 export default function Navbar() {
