@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract, useChainId } from "wagmi";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Lock, CheckCircle } from "lucide-react";
@@ -9,9 +9,12 @@ import Navbar from "@/components/Navbar";
 import EncryptionBadge from "@/components/ui/EncryptionBadge";
 import AIRiskAdvisor from "@/components/AIRiskAdvisor";
 import { Toaster, toast } from "sonner";
+import { useCofheEncrypt } from "@cofhe/react";
+import { Encryptable } from "@cofhe/sdk";
+import { INSURANCE_ABI } from "@/utils/abi";
 import {
   estimatePremium, premiumToEth, coverageToEth,
-  getRiskColor, getRiskLabel,
+  getRiskColor, getRiskLabel, CONTRACT_ADDRESSES,
 } from "@/utils/constants";
 
 type Step = "ai" | "review" | "confirm" | "done";
@@ -86,7 +89,8 @@ function Slider({
 
 export default function NewPolicyPage() {
   const { isConnected } = useAccount();
-  const router = useRouter();
+  const chainId = useChainId();
+  const router  = useRouter();
 
   const [step, setStep]             = useState<Step>("ai");
   const [age, setAge]               = useState(35);
@@ -95,6 +99,10 @@ export default function NewPolicyPage() {
   const [encrypting, setEncrypting] = useState(false);
   const [txHash, setTxHash]         = useState("");
   const [policyId, setPolicyId]     = useState<number | null>(null);
+
+  const { encryptInputsAsync } = useCofheEncrypt();
+  const { writeContractAsync }  = useWriteContract();
+  const address = CONTRACT_ADDRESSES[chainId];
 
   const premium   = estimatePremium(riskScore, coverage);
   const riskColor = getRiskColor(riskScore);
@@ -109,12 +117,23 @@ export default function NewPolicyPage() {
     setEncrypting(true);
     setStep("confirm");
     try {
-      await new Promise(r => setTimeout(r, 2000));
-      toast.success("Risk data encrypted with FHE!");
-      await new Promise(r => setTimeout(r, 1500));
-      const id = Math.floor(Math.random() * 1000) + 1;
-      setPolicyId(id);
-      setTxHash("0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""));
+      // FHE-encrypt the three private inputs client-side
+      const [encAge, encRisk, encCov] = await encryptInputsAsync([
+        Encryptable.uint64(BigInt(age)),
+        Encryptable.uint64(BigInt(riskScore)),
+        Encryptable.uint64(BigInt(coverage)),
+      ]);
+      toast.success("Inputs FHE-encrypted — sending transaction…");
+
+      const hash = await writeContractAsync({
+        address,
+        abi: INSURANCE_ABI,
+        functionName: "registerPolicy",
+        args: [encAge as any, encRisk as any, encCov as any],
+      });
+
+      setTxHash(hash);
+      setPolicyId(1); // will be parsed from receipt once contract is deployed
       setStep("done");
     } catch (err: any) {
       toast.error(err?.message ?? "Transaction failed");
