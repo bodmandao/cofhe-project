@@ -1,255 +1,1064 @@
-export const INSURANCE_ABI = [
-  // ── Policy Registration ─────────────────────────────────────────────────
-  {
-    name: "registerPolicy",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "encAge",       type: "tuple", components: [{ name: "ctHash", type: "bytes32" }, { name: "securityZone", type: "int32" }] },
-      { name: "encRiskScore", type: "tuple", components: [{ name: "ctHash", type: "bytes32" }, { name: "securityZone", type: "int32" }] },
-      { name: "encCoverage",  type: "tuple", components: [{ name: "ctHash", type: "bytes32" }, { name: "securityZone", type: "int32" }] },
-    ],
-    outputs: [{ name: "policyId", type: "uint256" }],
-  },
-
-  // ── Premium Payment ─────────────────────────────────────────────────────
-  {
-    name: "payPremium",
-    type: "function",
-    stateMutability: "payable",
-    inputs: [{ name: "policyId", type: "uint256" }],
-    outputs: [],
-  },
-
-  // ── Premium Reveal ──────────────────────────────────────────────────────
-  {
-    name: "revealPremium",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "policyId",  type: "uint256" },
-      { name: "plaintext", type: "uint64" },
-      { name: "signature", type: "bytes" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "getRevealedPremium",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "policyId", type: "uint256" }],
-    outputs: [
-      { name: "units", type: "uint256" },
-      { name: "ready", type: "bool" },
-    ],
-  },
-
-  // ── Claims ──────────────────────────────────────────────────────────────
-  {
-    name: "fileClaim",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "policyId",        type: "uint256" },
-      { name: "encClaimAmount",  type: "tuple", components: [{ name: "ctHash", type: "bytes32" }, { name: "securityZone", type: "int32" }] },
-      { name: "encSeverity",     type: "tuple", components: [{ name: "ctHash", type: "bytes32" }, { name: "securityZone", type: "int32" }] },
-    ],
-    outputs: [{ name: "claimId", type: "uint256" }],
-  },
-  {
-    name: "publishClaimValidity",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "claimId",   type: "uint256" },
-      { name: "plaintext", type: "uint32" },
-      { name: "signature", type: "bytes" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "publishPayoutAmount",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "claimId",   type: "uint256" },
-      { name: "plaintext", type: "uint64" },
-      { name: "signature", type: "bytes" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "withdrawPayout",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [{ name: "claimId", type: "uint256" }],
-    outputs: [],
-  },
-
-  // ── Pool ────────────────────────────────────────────────────────────────
-  {
-    name: "fundPool",
-    type: "function",
-    stateMutability: "payable",
-    inputs: [],
-    outputs: [],
-  },
-  {
-    name: "cancelPolicy",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [{ name: "policyId", type: "uint256" }],
-    outputs: [],
-  },
-
-  // ── Views ───────────────────────────────────────────────────────────────
-  {
-    name: "getPoolStats",
-    type: "function",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [
-      { name: "balance",  type: "uint256" },
-      { name: "policies", type: "uint256" },
-      { name: "active",   type: "uint256" },
-      { name: "claims",   type: "uint256" },
-      { name: "approved", type: "uint256" },
-      { name: "payouts",  type: "uint256" },
-    ],
-  },
-  {
-    name: "getUserPolicies",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ name: "", type: "uint256[]" }],
-  },
-  {
-    name: "getUserClaims",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ name: "", type: "uint256[]" }],
-  },
-  {
-    name: "getPolicyHandles",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "policyId", type: "uint256" }],
-    outputs: [
-      { name: "age",       type: "uint256" },
-      { name: "riskScore", type: "uint256" },
-      { name: "coverage",  type: "uint256" },
-      { name: "premium",   type: "uint256" },
-    ],
-  },
-  {
-    name: "getClaimHandles",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "claimId", type: "uint256" }],
-    outputs: [
-      { name: "amount",   type: "uint256" },
-      { name: "severity", type: "uint256" },
-      { name: "payout",   type: "uint256" },
-      { name: "valid",    type: "uint256" },
-    ],
-  },
-  {
-    name: "policies",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "", type: "uint256" }],
-    outputs: [
-      { name: "holder",          type: "address" },
-      { name: "encryptedAge",    type: "uint256" },
-      { name: "encryptedRiskScore", type: "uint256" },
-      { name: "encryptedCoverage",  type: "uint256" },
-      { name: "encryptedPremium",   type: "uint256" },
-      { name: "premiumPaidUntil", type: "uint256" },
-      { name: "status",           type: "uint8" },
-      { name: "createdAt",        type: "uint256" },
-    ],
-  },
-  {
-    name: "claims",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "", type: "uint256" }],
-    outputs: [
-      { name: "policyId",   type: "uint256" },
-      { name: "claimant",   type: "address" },
-      { name: "encryptedClaimAmount", type: "uint256" },
-      { name: "encryptedSeverity",    type: "uint256" },
-      { name: "encryptedPayout",      type: "uint256" },
-      { name: "isValid",    type: "uint256" },
-      { name: "status",     type: "uint8" },
-      { name: "filedAt",    type: "uint256" },
-    ],
-  },
-  // Public state variables
-  { name: "poolBalance",          type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "totalPolicies",        type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "totalActivePolicies",  type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "totalClaims",          type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "totalApprovedClaims",  type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "totalPayouts",         type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "PREMIUM_UNIT",         type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
-  { name: "BASE_PREMIUM",         type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint64" }] },
-  { name: "RISK_DENOMINATOR",     type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint64" }] },
-  { name: "MIN_SEVERITY",         type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint64" }] },
-
-  // ── Events ──────────────────────────────────────────────────────────────
-  {
-    name: "PolicyRegistered",
-    type: "event",
-    inputs: [
-      { name: "policyId",  type: "uint256", indexed: true },
-      { name: "holder",    type: "address", indexed: true },
-      { name: "timestamp", type: "uint256", indexed: false },
-    ],
-  },
-  {
-    name: "PremiumPaid",
-    type: "event",
-    inputs: [
-      { name: "policyId",  type: "uint256", indexed: true },
-      { name: "periodEnd", type: "uint256", indexed: false },
-      { name: "amount",    type: "uint256", indexed: false },
-    ],
-  },
-  {
-    name: "ClaimFiled",
-    type: "event",
-    inputs: [
-      { name: "claimId",   type: "uint256", indexed: true },
-      { name: "policyId",  type: "uint256", indexed: true },
-      { name: "claimant",  type: "address", indexed: true },
-    ],
-  },
-  {
-    name: "ClaimValidated",
-    type: "event",
-    inputs: [
-      { name: "claimId",  type: "uint256", indexed: true },
-      { name: "approved", type: "bool",    indexed: false },
-    ],
-  },
-  {
-    name: "ClaimPaid",
-    type: "event",
-    inputs: [
-      { name: "claimId",  type: "uint256", indexed: true },
-      { name: "claimant", type: "address", indexed: true },
-      { name: "amount",   type: "uint256", indexed: false },
-    ],
-  },
-  {
-    name: "PoolFunded",
-    type: "event",
-    inputs: [
-      { name: "funder", type: "address", indexed: true },
-      { name: "amount", type: "uint256", indexed: false },
-    ],
-  },
-] as const;
+export const INSURANCE_ABI =  [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "ClaimAlreadyProcessed",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "ClaimNotApproved",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "ClaimNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InsufficientPool",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "got",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "expected",
+          "type": "uint8"
+        }
+      ],
+      "name": "InvalidEncryptedInput",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "NotClaimant",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "NotPolicyHolder",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "PayoutNotDecrypted",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "PolicyNotActive",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "PolicyNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "PremiumOverdue",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "int32",
+          "name": "value",
+          "type": "int32"
+        }
+      ],
+      "name": "SecurityZoneOutOfBounds",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "claimant",
+          "type": "address"
+        }
+      ],
+      "name": "ClaimFiled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "claimant",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "ClaimPaid",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "approved",
+          "type": "bool"
+        }
+      ],
+      "name": "ClaimValidated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "PolicyCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "holder",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "PolicyRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "funder",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "PoolFunded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "periodEnd",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "PremiumPaid",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "ACTUARIAL_DIVISOR",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASE_PREMIUM",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_SEVERITY",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "PREMIUM_UNIT",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "RISK_DENOMINATOR",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "TIER_MID",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelPolicy",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "claims",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "claimant",
+          "type": "address"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedClaimAmount",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedSeverity",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedPayout",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint8",
+          "name": "isValid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "enum ClaimStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "filedAt",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "ctHash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "securityZone",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utype",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "signature",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct InEuint64",
+          "name": "encClaimAmount",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "ctHash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "securityZone",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utype",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "signature",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct InEuint64",
+          "name": "encSeverity",
+          "type": "tuple"
+        }
+      ],
+      "name": "fileClaim",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fundPool",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getClaimHandles",
+      "outputs": [
+        {
+          "internalType": "euint64",
+          "name": "amount",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "severity",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "payout",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint8",
+          "name": "valid",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getPolicyHandles",
+      "outputs": [
+        {
+          "internalType": "euint64",
+          "name": "age",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "riskScore",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "coverage",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "premium",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPoolRiskHandle",
+      "outputs": [
+        {
+          "internalType": "euint64",
+          "name": "handle",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bool",
+          "name": "initialized",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPoolStats",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "policies_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "active",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "claims_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "approved",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "payouts",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRevealedPoolRisk",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "ready",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRevealedPremium",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "units",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "ready",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getUserClaims",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getUserPolicies",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "payPremium",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "policies",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "holder",
+          "type": "address"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedAge",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedRiskScore",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedCoverage",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "euint64",
+          "name": "encryptedPremium",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "premiumPaidUntil",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum PolicyStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "createdAt",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "poolBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "plaintext",
+          "type": "uint8"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "publishClaimValidity",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint64",
+          "name": "plaintext",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "publishPayoutAmount",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "ctHash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "securityZone",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utype",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "signature",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct InEuint64",
+          "name": "encAge",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "ctHash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "securityZone",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utype",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "signature",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct InEuint64",
+          "name": "encRiskScore",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "ctHash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "securityZone",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "utype",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "signature",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct InEuint64",
+          "name": "encCoverage",
+          "type": "tuple"
+        }
+      ],
+      "name": "registerPolicy",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "requestPoolRiskReveal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "requestPremiumReveal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "plaintext",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "revealPoolRisk",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint64",
+          "name": "plaintext",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "revealPremium",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalApprovedClaims",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalClaims",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalPayouts",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalPolicies",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "claimId",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawPayout",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ] as const;
