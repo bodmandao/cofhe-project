@@ -90,15 +90,15 @@ export function useRegisterPolicy() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   async function registerPolicy(
-    encAge: { ctHash: `0x${string}`; securityZone: number },
-    encRisk: { ctHash: `0x${string}`; securityZone: number },
-    encCoverage: { ctHash: `0x${string}`; securityZone: number },
+    encAge: any,
+    encRisk: any,
+    encCoverage: any,
   ) {
     return writeContractAsync({
       address,
       abi: INSURANCE_ABI,
       functionName: "registerPolicy",
-      args: [encAge, encRisk, encCoverage],
+      args: [encAge, encRisk, encCoverage] as any,
     });
   }
 
@@ -132,14 +132,14 @@ export function useFileClaim() {
 
   async function fileClaim(
     policyId: bigint,
-    encAmount:   { ctHash: `0x${string}`; securityZone: number },
-    encSeverity: { ctHash: `0x${string}`; securityZone: number },
+    encAmount: any,
+    encSeverity: any,
   ) {
     return writeContractAsync({
       address,
       abi: INSURANCE_ABI,
       functionName: "fileClaim",
-      args: [policyId, encAmount, encSeverity],
+      args: [policyId, encAmount, encSeverity] as any,
     });
   }
 

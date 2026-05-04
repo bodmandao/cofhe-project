@@ -1,9 +1,10 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, getDefaultConfig, useWalletClient, usePublicClient, http } from "wagmi";
+import { WagmiProvider, useWalletClient, usePublicClient } from "wagmi";
+import { http } from "viem";
 import { arbitrumSepolia, sepolia } from "wagmi/chains";
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { CofheProvider, useCofheAutoConnect } from "@cofhe/react";
 
@@ -44,7 +45,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowTheme}>
-          <CofheProvider queryClient={queryClient}>
+          <CofheProvider>
             <CofheAutoConnector />
             {children}
           </CofheProvider>
