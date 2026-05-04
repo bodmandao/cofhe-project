@@ -355,7 +355,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         bytes memory svg  = bytes(_buildSVG(tokenId));
         bytes memory json = abi.encodePacked(
             '{"name":"ShieldFi Policy #', tokenId.toString(),
-            '","description":"Confidential Insurance Policy — risk data encrypted via Fhenix CoFHE. No plaintext ever touches the chain.",',
+            '","description":"Confidential Insurance Policy - risk data encrypted via Fhenix CoFHE. No plaintext ever touches the chain.",',
             '"image":"data:image/svg+xml;base64,', Base64.encode(svg),
             '","attributes":[',
             '{"trait_type":"Status","value":"',    _statusLabel(tokenId), '"},',
@@ -392,7 +392,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
             // encrypted handle section
             '<text x="24" y="208" font-family="monospace" font-size="8" fill="#ffffff30" letter-spacing="2">ENCRYPTED HANDLE</text>',
             '<rect x="24" y="216" width="352" height="30" fill="#ffffff04" rx="2"/>',
-            '<text x="32" y="235" font-family="monospace" font-size="8" fill="#00ff8850">0x████████████████████████████████...</text>',
+            '<text x="32" y="235" font-family="monospace" font-size="8" fill="#00ff8850">0x????????????????????????????????...</text>',
             // formula
             '<text x="24" y="278" font-family="monospace" font-size="8" fill="#ffffff30" letter-spacing="2">PREMIUM FORMULA</text>',
             '<text x="24" y="294" font-family="monospace" font-size="8" fill="#7c3aed90">FHE.add(dynamicBase, FHE.div(FHE.mul(risk,cov),100))</text>',
