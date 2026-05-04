@@ -12,13 +12,13 @@ import "./CommitteeManager.sol";
 contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
     using Strings for uint256;
 
-    // ── Constants ──────────────────────────────────────────────────────────
+    //  Constants 
     uint64  public constant RISK_DENOMINATOR = 100;
     uint64  public constant MIN_SEVERITY     = 30;
     uint64  public constant TIER_MID         = 70;
     uint256 public constant PREMIUM_UNIT     = 0.0001 ether;
 
-    // ── State ──────────────────────────────────────────────────────────────
+    //  State 
     uint256 private _nextPolicyId = 1;
     uint256 private _nextClaimId  = 1;
 
@@ -34,7 +34,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
     uint256 public totalApprovedClaims;
     uint256 public totalPayouts;
 
-    // ── Events ────────────────────────────────────────────────────────────
+    //  Events 
     event PolicyRegistered(uint256 indexed policyId, address indexed holder, uint256 timestamp);
     event PremiumPaid(uint256 indexed policyId, uint256 periodEnd, uint256 amount);
     event ClaimFiled(uint256 indexed claimId, uint256 indexed policyId, address indexed claimant);
@@ -43,7 +43,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
     event PoolFunded(address indexed funder, uint256 amount);
     event PolicyCancelled(uint256 indexed policyId);
 
-    // ── Constructor ────────────────────────────────────────────────────────
+    //  Constructor 
 
     /**
      * @param committee  Initial committee member addresses
@@ -56,7 +56,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         _initCommittee(committee, quorum, msg.sender);
     }
 
-    // ── Modifiers ─────────────────────────────────────────────────────────
+    //  Modifiers ─
     modifier validPolicy(uint256 id) {
         if (policies[id].holder == address(0)) revert PolicyNotFound(id);
         _;
@@ -73,7 +73,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         _;
     }
 
-    // ── Policy Lifecycle ──────────────────────────────────────────────────
+    //  Policy Lifecycle 
 
     /**
      * @notice Register a new policy with fully encrypted risk inputs.
@@ -163,7 +163,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         emit PolicyCancelled(policyId);
     }
 
-    // ── Premium Reveal (3-step CoFHE flow) ────────────────────────────────
+    //  Premium Reveal (3-step CoFHE flow) 
 
     /** @notice Step 1 — grant public ACL so CoFHE SDK can decrypt premium off-chain. */
     function requestPremiumReveal(uint256 policyId) external onlyHolder(policyId) {
@@ -191,7 +191,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         return FHE.getDecryptResultSafe(policies[policyId].encryptedPremium);
     }
 
-    // ── Claims Lifecycle ──────────────────────────────────────────────────
+    //  Claims Lifecycle 
 
     /**
      * @notice File a claim with encrypted amount and severity.
@@ -316,7 +316,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         emit ClaimPaid(claimId, msg.sender, payoutWei);
     }
 
-    // ── Pool Admin ────────────────────────────────────────────────────────
+    //  Pool Admin 
 
     function fundPool() external payable {
         require(msg.value > 0, "Zero ETH");
@@ -328,7 +328,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         poolBalance += msg.value;
     }
 
-    // ── ERC-721 Overrides ─────────────────────────────────────────────────
+    //  ERC-721 Overrides ─
 
     /**
      * @dev When a Policy NFT is transferred the policy holder is updated to the
@@ -411,7 +411,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         return "EXPIRED";
     }
 
-    // ── View Helpers ──────────────────────────────────────────────────────
+    //  View Helpers 
 
     function getPoolStats() external view returns (
         uint256 balance, uint256 policies_, uint256 active,

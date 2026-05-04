@@ -11,6 +11,7 @@ const NAV = [
   { href: "/policy/new", label: "GET INSURED" },
   { href: "/claims/new", label: "FILE CLAIM" },
   { href: "/explore",    label: "FHE EXPLORER" },
+  { href: "/committee",  label: "COMMITTEE" },
 ];
 
 export default function Navbar() {
