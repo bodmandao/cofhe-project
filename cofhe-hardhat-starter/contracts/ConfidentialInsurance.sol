@@ -8,8 +8,11 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 import "./InsuranceTypes.sol";
 import "./ActuarialEngine.sol";
 import "./CommitteeManager.sol";
+import "./ReputationEngine.sol";
+import "./ParametricInsurance.sol";
 
-contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
+
+contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ReputationEngine, ParametricInsurance, ERC721 {
     using Strings for uint256;
 
     //  Constants 
@@ -51,9 +54,15 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
      */
     constructor(
         address[] memory committee,
-        uint256          quorum
+        uint256          quorum,
+        address          oracle    // Chainlink ETH/USD feed — address(0) to skip
     ) ERC721("ShieldFi Policy", "SFDP") {
         _initCommittee(committee, quorum, msg.sender);
+        _initParametric(oracle);
+    }
+
+    function setOracle(address oracle) external onlyCommitteeOwner {
+        _setOracle(oracle);
     }
 
     //  Modifiers ─
@@ -97,9 +106,10 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         euint64 coverage  = FHE.asEuint64(encCoverage);
 
         euint64 dynamicBase   = _computeDynamicBase();
+        euint64 bonusBase     = _applyNoClaimsBonus(msg.sender, dynamicBase);
         euint64 product       = FHE.mul(riskScore, coverage);
         euint64 riskComponent = FHE.div(product, FHE.asEuint64(RISK_DENOMINATOR));
-        euint64 premium       = FHE.add(dynamicBase, riskComponent);
+        euint64 premium       = FHE.add(bonusBase, riskComponent);
 
         _accumulate(riskScore);
 
@@ -114,7 +124,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
             encryptedRiskScore: riskScore,
             encryptedCoverage:  coverage,
             encryptedPremium:   premium,
-            premiumPaidUntil:   0,
+            premiumPaidUntil:   block.timestamp + 30 days,
             status:             PolicyStatus.Active,
             createdAt:          block.timestamp
         });
@@ -208,7 +218,8 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
     function fileClaim(
         uint256   policyId,
         InEuint64 calldata encClaimAmount,
-        InEuint64 calldata encSeverity
+        InEuint64 calldata encSeverity,
+        InEuint64 calldata encFraudScore
     ) external onlyHolder(policyId) activePolicy(policyId) returns (uint256 claimId) {
         if (policies[policyId].premiumPaidUntil < block.timestamp)
             revert PremiumOverdue(policyId);
@@ -217,11 +228,14 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
 
         euint64 claimAmount = FHE.asEuint64(encClaimAmount);
         euint64 severity    = FHE.asEuint64(encSeverity);
+        euint64 fraudScore  = FHE.asEuint64(encFraudScore);
 
+        // Three-gate FHE validity circuit
         ebool amountValid   = FHE.lte(claimAmount, policies[policyId].encryptedCoverage);
-        ebool severityValid = FHE.gte(severity, FHE.asEuint64(MIN_SEVERITY));
-        ebool isValidBool   = FHE.and(amountValid, severityValid);
-        euint8 isValid = FHE.select(isValidBool, FHE.asEuint8(uint8(1)), FHE.asEuint8(uint8(0)));
+        ebool severityValid = FHE.gte(severity,    FHE.asEuint64(MIN_SEVERITY));
+        ebool fraudValid    = FHE.lte(fraudScore,  FHE.asEuint64(FRAUD_THRESHOLD));
+        ebool isValidBool   = FHE.and(FHE.and(amountValid, severityValid), fraudValid);
+        euint8 isValid      = FHE.select(isValidBool, FHE.asEuint8(uint8(1)), FHE.asEuint8(uint8(0)));
 
         euint64 halfPayout = FHE.div(claimAmount, FHE.asEuint64(uint64(2)));
         ebool   isHighTier = FHE.gte(severity, FHE.asEuint64(TIER_MID));
@@ -229,6 +243,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
 
         FHE.allowThis(claimAmount); FHE.allowSender(claimAmount);
         FHE.allowThis(severity);    FHE.allowSender(severity);
+        FHE.allowThis(fraudScore);  FHE.allowSender(fraudScore);
         FHE.allowThis(isValid);     FHE.allowSender(isValid);
         FHE.allowThis(payout);      FHE.allowSender(payout);
 
@@ -237,10 +252,12 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
             claimant:             msg.sender,
             encryptedClaimAmount: claimAmount,
             encryptedSeverity:    severity,
+            encryptedFraudScore:  fraudScore,
             encryptedPayout:      payout,
             isValid:              isValid,
             status:               ClaimStatus.Pending,
-            filedAt:              block.timestamp
+            filedAt:              block.timestamp,
+            isParametric:         false
         });
 
         _userClaims[msg.sender].push(claimId);
@@ -310,10 +327,62 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         poolBalance  -= payoutWei;
         totalPayouts += payoutWei;
 
+        _recordClaim(c.claimant); // update encrypted reputation history
+
         (bool ok,) = msg.sender.call{value: payoutWei}("");
         require(ok, "ETH transfer failed");
 
         emit ClaimPaid(claimId, msg.sender, payoutWei);
+    }
+
+    //  Parametric 
+
+    /**
+     * @dev Called by ParametricInsurance.triggerParametricClaim when ETH drops >30%.
+     *      Creates a claim at full coverage with max severity and zero fraud score.
+     *      All computation is on ciphertexts — no plaintext amounts are known.
+     */
+    function _executeParametricClaim(uint256 policyId) internal override {
+        Policy storage p = policies[policyId];
+        if (p.holder == address(0)) revert PolicyNotFound(policyId);
+        if (p.status != PolicyStatus.Active) revert PolicyNotActive(policyId);
+
+        uint256 claimId = _nextClaimId++;
+
+        euint64 claimAmount = p.encryptedCoverage;
+        euint64 severity    = FHE.asEuint64(100);
+        euint64 fraudScore  = FHE.asEuint64(0);
+
+        ebool amountValid   = FHE.lte(claimAmount, p.encryptedCoverage);
+        ebool severityValid = FHE.gte(severity, FHE.asEuint64(MIN_SEVERITY));
+        ebool fraudValid    = FHE.lte(fraudScore, FHE.asEuint64(FRAUD_THRESHOLD));
+        ebool isValidBool   = FHE.and(FHE.and(amountValid, severityValid), fraudValid);
+        euint8 isValid      = FHE.select(isValidBool, FHE.asEuint8(1), FHE.asEuint8(0));
+
+        euint64 halfPayout = FHE.div(claimAmount, FHE.asEuint64(2));
+        ebool   isHighTier = FHE.gte(severity, FHE.asEuint64(TIER_MID));
+        euint64 payout     = FHE.select(isHighTier, claimAmount, halfPayout);
+
+        FHE.allowThis(severity); FHE.allowThis(fraudScore);
+        FHE.allowThis(isValid);  FHE.allowThis(payout);
+
+        claims[claimId] = Claim({
+            policyId:             policyId,
+            claimant:             p.holder,
+            encryptedClaimAmount: claimAmount,
+            encryptedSeverity:    severity,
+            encryptedFraudScore:  fraudScore,
+            encryptedPayout:      payout,
+            isValid:              isValid,
+            status:               ClaimStatus.Pending,
+            filedAt:              block.timestamp,
+            isParametric:         true
+        });
+
+        _userClaims[p.holder].push(claimId);
+        totalClaims++;
+
+        emit ClaimFiled(claimId, policyId, p.holder);
     }
 
     //  Pool Admin 
@@ -328,7 +397,7 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ERC721 {
         poolBalance += msg.value;
     }
 
-    //  ERC-721 Overrides ─
+    //  ERC-721 Overrides 
 
     /**
      * @dev When a Policy NFT is transferred the policy holder is updated to the

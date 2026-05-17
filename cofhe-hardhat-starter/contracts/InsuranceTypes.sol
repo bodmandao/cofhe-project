@@ -24,11 +24,16 @@ struct Claim {
     address     claimant;
     euint64     encryptedClaimAmount; // encrypted — only claimant can read
     euint64     encryptedSeverity;    // encrypted — only claimant can read
+    euint64     encryptedFraudScore;  // Claude AI fraud probability [0-100], encrypted
     euint64     encryptedPayout;      // FHE.select result — tiered by severity
     euint8      isValid;              // euint8: publishDecryptResult supported (no ebool overload)
     ClaimStatus status;
     uint256     filedAt;
+    bool        isParametric;         // true if auto-triggered (no human filing)
 }
+
+//  Protocol Constants 
+uint64 constant FRAUD_THRESHOLD = 70; // claims with score > 70 fail FHE validation
 
 //  Custom Errors 
 error PolicyNotFound(uint256 id);
