@@ -35,13 +35,13 @@ task('deploy-insurance', 'Deploy the ConfidentialInsurance (ShieldFi) contract')
     const addr = await insurance.getAddress()
     console.log(`\n✅  ConfidentialInsurance deployed: ${addr}`)
 
-    // // Fund the pool
-    // const fundAmount = ethers.parseEther(args.fund)
-    // if (fundAmount > 0n) {
-    //   const tx = await insurance.fundPool({ value: fundAmount })
-    //   await tx.wait()
-    //   console.log(`💰  Pool funded with ${args.fund} ETH`)
-    // }
+    // Fund the pool
+    const fundAmount = ethers.parseEther(args.fund)
+    if (fundAmount > 0n) {
+      const tx = await insurance.fundPool({ value: fundAmount })
+      await tx.wait()
+      console.log(`💰  Pool funded with ${args.fund} ETH`)
+    }
 
     saveDeployment(network.name, 'ConfidentialInsurance', addr)
 
@@ -50,7 +50,7 @@ task('deploy-insurance', 'Deploy the ConfidentialInsurance (ShieldFi) contract')
     console.log(`   ACTUARIAL_DIVISOR: ${await insurance.ACTUARIAL_DIVISOR()}`)
     console.log(`   RISK_DENOMINATOR : ${await insurance.RISK_DENOMINATOR()}`)
     console.log(`   MIN_SEVERITY     : ${await insurance.MIN_SEVERITY()}`)
-    console.log(`   FRAUD_THRESHOLD  : ${await insurance.FRAUD_THRESHOLD_PCT()}%`)
+    console.log(`   FRAUD_THRESHOLD  : ${await insurance.FRAUD_THRESHOLD()}`)
     console.log(`   BONUS_DISCOUNT   : ${await insurance.BONUS_DISCOUNT_PCT()}%`)
     console.log(`   PREMIUM_UNIT     : ${ethers.formatEther(await insurance.PREMIUM_UNIT())} ETH/unit`)
     console.log(`   NFT Name         : ${await insurance.name()} (${await insurance.symbol()})\n`)
