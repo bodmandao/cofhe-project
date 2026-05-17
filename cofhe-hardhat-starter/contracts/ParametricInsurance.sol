@@ -1,59 +1,111 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "@fhenixprotocol/cofhe-contracts/FHE.sol";
+/**
+ * @title  ParametricInsurance
+ * @notice Abstract module for keeper-triggered parametric claims.
+ *         If ETH/USD drops > TRIGGER_DROP_PCT within PRICE_WINDOW,
+ *         any keeper can call triggerParametricClaim(policyId) — no
+ *         human claim filing required.
+ *
+ * @dev    Oracle: Chainlink AggregatorV3Interface.
+ *         In hardhat / localcofhe: deploy MockAggregator and call
+ *         setOracle(mockAddr) after construction.
+ *         FHE validates coverage on ciphertexts; committee quorum is
+ *         still required before payout is published.
+ */
+interface IAggregatorV3 {
+    function latestRoundData() external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+    function decimals() external view returns (uint8);
+}
 
-abstract contract ReputationEngine {
+abstract contract ParametricInsurance {
 
     //  Constants 
-    uint64 public constant BONUS_DISCOUNT_PCT = 20; // 20% off base premium for clean record
+    int256  public constant TRIGGER_DROP_PCT = 30;   // 30% ETH/USD drop triggers
+    uint256 public constant PRICE_WINDOW     = 24 hours;
 
     //  State 
-    mapping(address => euint64) private _encClaimHistory;
-    mapping(address => bool)    private _histInit;
+    IAggregatorV3 public priceOracle;
+    int256        public baselinePrice;
+    uint256       public baselineTimestamp;
 
-    //  Internal API ─
+    //  Events 
+    event BaselineUpdated(int256 price, uint256 timestamp);
+    event ParametricClaimTriggered(uint256 indexed policyId, int256 currentPrice, int256 dropPct);
 
-    function _recordClaim(address holder) internal {
-        _ensureInit(holder);
-        euint64 updated = FHE.add(_encClaimHistory[holder], FHE.asEuint64(1));
-        FHE.allowThis(updated);
-        _encClaimHistory[holder] = updated;
+    //  Errors 
+    error TriggerThresholdNotMet(int256 dropPct, int256 required);
+    error PriceWindowExpired();
+    error NoBaselineSet();
+    error OracleNotConfigured();
+
+    //  Init 
+
+    function _initParametric(address oracle) internal {
+        if (oracle != address(0)) priceOracle = IAggregatorV3(oracle);
+    }
+
+    //  Admin 
+
+    function _setOracle(address oracle) internal {
+        priceOracle = IAggregatorV3(oracle);
+    }
+
+    //  Baseline 
+
+    /**
+     * @notice Snapshot current ETH price as the reference baseline.
+     *         Call daily via keeper to keep the 24-hour window current.
+     */
+    function updatePriceBaseline() external {
+        if (address(priceOracle) == address(0)) revert OracleNotConfigured();
+        (, int256 price,, uint256 ts,) = priceOracle.latestRoundData();
+        baselinePrice     = price;
+        baselineTimestamp = ts;
+        emit BaselineUpdated(price, ts);
+    }
+
+    //  Parametric Trigger 
+
+    /**
+     * @notice Anyone can trigger a parametric claim if ETH has dropped > 30%
+     *         from the baseline within the 24-hour window.
+     */
+    function triggerParametricClaim(uint256 policyId) external {
+        if (address(priceOracle) == address(0)) revert OracleNotConfigured();
+        if (baselinePrice == 0)                 revert NoBaselineSet();
+        if (block.timestamp > baselineTimestamp + PRICE_WINDOW) revert PriceWindowExpired();
+
+        (, int256 currentPrice,,,) = priceOracle.latestRoundData();
+        int256 dropPct = (baselinePrice - currentPrice) * 100 / baselinePrice;
+        if (dropPct < TRIGGER_DROP_PCT) revert TriggerThresholdNotMet(dropPct, TRIGGER_DROP_PCT);
+
+        emit ParametricClaimTriggered(policyId, currentPrice, dropPct);
+        _executeParametricClaim(policyId);
     }
 
     /**
-     * @dev Returns base premium with a 20% discount applied on ciphertexts
-     *      if the holder has never had a paid claim. Uses FHE.eq + FHE.select.
+     * @notice Returns current ETH drop percentage and whether the trigger threshold is met.
      */
-    function _applyNoClaimsBonus(address holder, euint64 base) internal returns (euint64) {
-        if (!_histInit[holder]) return base;
-        ebool   cleanRecord = FHE.eq(_encClaimHistory[holder], FHE.asEuint64(0));
-        euint64 discount    = FHE.div(
-            FHE.mul(base, FHE.asEuint64(BONUS_DISCOUNT_PCT)),
-            FHE.asEuint64(100)
-        );
-        euint64 discounted  = FHE.sub(base, discount);
-        euint64 result      = FHE.select(cleanRecord, discounted, base);
-        FHE.allowThis(result);
-        return result;
+    function getCurrentDropPct() external view returns (int256 dropPct, bool triggered) {
+        if (baselinePrice == 0 || address(priceOracle) == address(0)) return (0, false);
+        (, int256 currentPrice,,,) = priceOracle.latestRoundData();
+        dropPct  = (baselinePrice - currentPrice) * 100 / baselinePrice;
+        triggered = dropPct >= TRIGGER_DROP_PCT;
     }
 
-    //  Views 
+    //  Abstract 
 
-    function getReputationHandle(address holder)
-        external view
-        returns (euint64 handle, bool initialized)
-    {
-        return (_encClaimHistory[holder], _histInit[holder]);
-    }
-
-    //  Private 
-
-    function _ensureInit(address holder) private {
-        if (!_histInit[holder]) {
-            _encClaimHistory[holder] = FHE.asEuint64(0);
-            FHE.allowThis(_encClaimHistory[holder]);
-            _histInit[holder] = true;
-        }
-    }
+    /**
+     * @dev Implementor creates a claim using the policy's encrypted coverage
+     *      as the claim amount with max severity. Called after trigger fires.
+     */
+    function _executeParametricClaim(uint256 policyId) internal virtual;
 }
