@@ -15,11 +15,12 @@ import "./ParametricInsurance.sol";
 contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ReputationEngine, ParametricInsurance, ERC721 {
     using Strings for uint256;
 
-    //  Constants 
+    //  Constants
     uint64  public constant RISK_DENOMINATOR = 100;
     uint64  public constant MIN_SEVERITY     = 30;
     uint64  public constant TIER_MID         = 70;
     uint256 public constant PREMIUM_UNIT     = 0.0001 ether;
+    uint64  public constant FRAUD_THRESHOLD  = 70;
 
     //  State 
     uint256 private _nextPolicyId = 1;

@@ -32,10 +32,7 @@ struct Claim {
     bool        isParametric;         // true if auto-triggered (no human filing)
 }
 
-//  Protocol Constants 
-uint64 constant FRAUD_THRESHOLD = 70; // claims with score > 70 fail FHE validation
-
-//  Custom Errors 
+//  Custom Errors
 error PolicyNotFound(uint256 id);
 error ClaimNotFound(uint256 id);
 error NotPolicyHolder(uint256 id);
