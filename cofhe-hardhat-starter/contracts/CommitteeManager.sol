@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 abstract contract CommitteeManager {
 
-    // ── State ──────────────────────────────────────────────────────────────
+    //  State 
     address public committeeOwner;
     uint256 public quorumThreshold;
 
@@ -14,19 +14,19 @@ abstract contract CommitteeManager {
     mapping(uint256 => uint256) public voteCount;
     mapping(uint256 => bool)    public claimQuorumReached;
 
-    // ── Events ─────────────────────────────────────────────────────────────
+    //  Events ─
     event CommitteeMemberAdded(address indexed member);
     event CommitteeMemberRemoved(address indexed member);
     event ClaimVoteSubmitted(uint256 indexed claimId, address indexed member, uint256 total);
     event ClaimQuorumReached(uint256 indexed claimId);
 
-    // ── Errors ─────────────────────────────────────────────────────────────
+    //  Errors ─
     error NotCommitteeMember();
     error AlreadyVoted(uint256 claimId);
     error QuorumNotReached(uint256 claimId);
     error NotCommitteeOwner();
 
-    // ── Modifiers ──────────────────────────────────────────────────────────
+    //  Modifiers 
     modifier onlyCommittee() {
         if (!isCommitteeMember[msg.sender]) revert NotCommitteeMember();
         _;
@@ -42,7 +42,7 @@ abstract contract CommitteeManager {
         _;
     }
 
-    // ── Internal Init ──────────────────────────────────────────────────────
+    //  Internal Init 
 
     function _initCommittee(
         address[] memory members,
@@ -65,7 +65,7 @@ abstract contract CommitteeManager {
         }
     }
 
-    // ── Committee Admin ────────────────────────────────────────────────────
+    //  Committee Admin 
 
     function addCommitteeMember(address member) external onlyCommitteeOwner {
         _addMember(member);
@@ -80,7 +80,7 @@ abstract contract CommitteeManager {
         quorumThreshold = quorum;
     }
 
-    // ── Voting ─────────────────────────────────────────────────────────────
+    //  Voting ─
 
     /**
      * @notice Submit a committee approval vote for a claim.
@@ -98,7 +98,7 @@ abstract contract CommitteeManager {
         }
     }
 
-    // ── Views ──────────────────────────────────────────────────────────────
+    //  Views 
 
     function hasVoted(uint256 claimId, address member) external view returns (bool) {
         return _votes[claimId][member];

@@ -3,29 +3,17 @@ pragma solidity ^0.8.25;
 
 import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
-/**
- * @title  ReputationEngine
- * @notice Abstract module tracking per-address claim history as an encrypted
- *         accumulator. No one — including the contract owner — can read a
- *         holder's raw history. Only FHE outputs are observable.
- *
- * @dev    Two effects:
- *           No-Claims Bonus  — FHE.eq(history, 0) → 20% premium discount
- *           Repeat-Claimant  — FHE.add increments history after each paid claim
- *         Mirrors ActuarialEngine's pool accumulator pattern, per-address.
- *
- * FHE ops: asEuint64, eq, mul, div, sub, select, allowThis
- */
+
 abstract contract ReputationEngine {
 
-    // ── Constants ──────────────────────────────────────────────────────────
+    //  Constants 
     uint64 public constant BONUS_DISCOUNT_PCT = 20; // 20% off base premium for clean record
 
-    // ── State ──────────────────────────────────────────────────────────────
+    //  State 
     mapping(address => euint64) private _encClaimHistory;
     mapping(address => bool)    private _histInit;
 
-    // ── Internal API ───────────────────────────────────────────────────────
+    //  Internal API ─
 
     function _recordClaim(address holder) internal {
         _ensureInit(holder);
@@ -51,7 +39,7 @@ abstract contract ReputationEngine {
         return result;
     }
 
-    // ── Views ──────────────────────────────────────────────────────────────
+    //  Views 
 
     function getReputationHandle(address holder)
         external view
@@ -60,7 +48,7 @@ abstract contract ReputationEngine {
         return (_encClaimHistory[holder], _histInit[holder]);
     }
 
-    // ── Private ────────────────────────────────────────────────────────────
+    //  Private 
 
     function _ensureInit(address holder) private {
         if (!_histInit[holder]) {

@@ -3,11 +3,11 @@ pragma solidity ^0.8.25;
 
 import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
-// ── Enums ──────────────────────────────────────────────────────────────────
+//  Enums 
 enum PolicyStatus { Active, Expired, Cancelled }
 enum ClaimStatus  { Pending, Approved, Rejected, Paid }
 
-// ── Structs ────────────────────────────────────────────────────────────────
+//  Structs 
 struct Policy {
     address      holder;
     euint64      encryptedAge;       // encrypted — only holder can read
@@ -30,7 +30,7 @@ struct Claim {
     uint256     filedAt;
 }
 
-// ── Custom Errors ──────────────────────────────────────────────────────────
+//  Custom Errors 
 error PolicyNotFound(uint256 id);
 error ClaimNotFound(uint256 id);
 error NotPolicyHolder(uint256 id);

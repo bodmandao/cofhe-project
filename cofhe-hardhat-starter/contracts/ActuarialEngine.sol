@@ -5,18 +5,18 @@ import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
 abstract contract ActuarialEngine {
 
-    // ── Constants ──────────────────────────────────────────────────────────
+    //  Constants 
     uint64 public constant BASE_PREMIUM      = 5;  // base units per period
     uint64 public constant ACTUARIAL_DIVISOR = 20; // max +5 base units at avg pool risk 100
 
-    // ── State ──────────────────────────────────────────────────────────────
+    //  State 
     euint64 private _poolRiskAccumulator;
     bool    private _accumulatorInit;
 
     // Shared with the inheriting contract — set here so _computeDynamicBase can read it.
     uint256 internal totalActivePolicies;
 
-    // ── Internal API (called by ConfidentialInsurance) ─────────────────────
+    //  Internal API (called by ConfidentialInsurance) ─
 
     /**
      * @dev Compute the dynamic base premium before accepting a new policy.
@@ -62,7 +62,7 @@ abstract contract ActuarialEngine {
         }
     }
 
-    // ── Pool Risk Oracle (3-step CoFHE decrypt) ────────────────────────────
+    //  Pool Risk Oracle (3-step CoFHE decrypt) 
 
     /**
      * @notice Step 1 — grant public ACL so the CoFHE SDK can decrypt the aggregate off-chain.
