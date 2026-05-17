@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract, useChainId } from "wagmi";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Lock, Plus } from "lucide-react";
@@ -8,7 +8,9 @@ import Navbar from "@/components/Navbar";
 import EncryptionBadge from "@/components/ui/EncryptionBadge";
 import PoolStats from "@/components/PoolStats";
 import { useUserPolicies, useUserClaims, usePolicy, useClaim } from "@/hooks/useInsurance";
-import { POLICY_STATUS_MAP, CLAIM_STATUS_MAP } from "@/utils/constants";
+import { POLICY_STATUS_MAP, CLAIM_STATUS_MAP, CONTRACT_ADDRESSES, PREMIUM_UNIT_WEI } from "@/utils/constants";
+import { INSURANCE_ABI } from "@/utils/abi";
+import { toast } from "sonner";
 
 const CLAIM_COLOR: Record<number, string> = {
   0: "var(--amber)",
@@ -19,12 +21,29 @@ const CLAIM_COLOR: Record<number, string> = {
 
 function PolicyRow({ policyId }: { policyId: bigint }) {
   const { data: policy } = usePolicy(policyId);
+  const chainId = useChainId();
+  const { writeContractAsync } = useWriteContract();
   const p = policy as any;
   const isActive  = p?.status === 0;
   const isPastDue = p && isActive && Number(p.premiumPaidUntil) < Date.now() / 1000;
   const until     = p?.premiumPaidUntil && Number(p.premiumPaidUntil) > 0
     ? new Date(Number(p.premiumPaidUntil) * 1000).toLocaleDateString()
     : "—";
+
+  async function payPremium() {
+    try {
+      await writeContractAsync({
+        address: CONTRACT_ADDRESSES[chainId],
+        abi: INSURANCE_ABI,
+        functionName: "payPremium",
+        args: [policyId],
+        value: PREMIUM_UNIT_WEI,
+      });
+      toast.success(`Premium paid for Policy #${policyId}`);
+    } catch (e: any) {
+      toast.error(e?.shortMessage ?? e?.message ?? "Payment failed");
+    }
+  }
 
   return (
     <motion.div
@@ -81,11 +100,20 @@ function PolicyRow({ policyId }: { policyId: bigint }) {
       </span>
 
       {/* Action */}
-      <Link href={`/claims/new?policy=${policyId}`}>
-        <button className="btn-ghost !text-[10px] !py-1.5 !px-3">
-          FILE CLAIM <ArrowRight size={10} />
+      {isPastDue ? (
+        <button
+          className="btn-primary !text-[10px] !py-1.5 !px-3"
+          onClick={payPremium}
+        >
+          PAY PREMIUM
         </button>
-      </Link>
+      ) : (
+        <Link href={`/claims/new?policy=${policyId}`}>
+          <button className="btn-ghost !text-[10px] !py-1.5 !px-3">
+            FILE CLAIM <ArrowRight size={10} />
+          </button>
+        </Link>
+      )}
     </motion.div>
   );
 }

@@ -7,11 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 const NAV = [
-  { href: "/dashboard",  label: "DASHBOARD" },
-  { href: "/policy/new", label: "GET INSURED" },
-  { href: "/claims/new", label: "FILE CLAIM" },
-  { href: "/explore",    label: "FHE EXPLORER" },
-  { href: "/committee",  label: "COMMITTEE" },
+  { href: "/dashboard",   label: "DASHBOARD" },
+  { href: "/policy/new",  label: "GET INSURED" },
+  { href: "/claims/new",  label: "FILE CLAIM" },
+  { href: "/marketplace", label: "MARKET" },
+  { href: "/explore",     label: "FHE EXPLORER" },
+  { href: "/committee",   label: "COMMITTEE" },
 ];
 
 export default function Navbar() {

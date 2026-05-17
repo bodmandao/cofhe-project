@@ -1,19 +1,24 @@
 import { arbitrumSepolia, sepolia } from "wagmi/chains";
 
-// ── Contract Addresses ─────────────────────────────────────────────────────
+//  Contract Addresses 
 export const CONTRACT_ADDRESSES: Record<number, `0x${string}`> = {
   [arbitrumSepolia.id]: (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_ARB_SEPOLIA || "0x0000000000000000000000000000000000000000") as `0x${string}`,
   [sepolia.id]:         (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS_ETH_SEPOLIA  || "0x0000000000000000000000000000000000000000") as `0x${string}`,
 };
 
-// ── Protocol Constants (must match ConfidentialInsurance.sol) ──────────────
+export const MARKETPLACE_ADDRESSES: Record<number, `0x${string}`> = {
+  [arbitrumSepolia.id]: (process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS_ARB_SEPOLIA || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  [sepolia.id]:         (process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS_ETH_SEPOLIA  || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+};
+
+//  Protocol Constants 
 export const BASE_PREMIUM     = 5n;
 export const RISK_DENOMINATOR = 100n;
 export const MIN_SEVERITY     = 30;
 export const TIER_MID         = 70;
 export const PREMIUM_UNIT_WEI = 100_000_000_000_000n; // 0.0001 ETH in wei
 
-// ── UI Helpers ─────────────────────────────────────────────────────────────
+//  UI Helpers 
 export const RISK_LABELS: Record<string, string> = {
   low:    "Low Risk (1–30)",
   medium: "Moderate Risk (31–70)",
