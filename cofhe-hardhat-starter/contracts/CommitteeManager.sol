@@ -14,13 +14,13 @@ abstract contract CommitteeManager {
     mapping(uint256 => uint256) public voteCount;
     mapping(uint256 => bool)    public claimQuorumReached;
 
-    //  Events ─
+    //  Events 
     event CommitteeMemberAdded(address indexed member);
     event CommitteeMemberRemoved(address indexed member);
     event ClaimVoteSubmitted(uint256 indexed claimId, address indexed member, uint256 total);
     event ClaimQuorumReached(uint256 indexed claimId);
 
-    //  Errors ─
+    //  Errors
     error NotCommitteeMember();
     error AlreadyVoted(uint256 claimId);
     error QuorumNotReached(uint256 claimId);
@@ -80,7 +80,7 @@ abstract contract CommitteeManager {
         quorumThreshold = quorum;
     }
 
-    //  Voting ─
+    //  Voting
 
     /**
      * @notice Submit a committee approval vote for a claim.

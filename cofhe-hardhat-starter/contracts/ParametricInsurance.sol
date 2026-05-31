@@ -1,19 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-/**
- * @title  ParametricInsurance
- * @notice Abstract module for keeper-triggered parametric claims.
- *         If ETH/USD drops > TRIGGER_DROP_PCT within PRICE_WINDOW,
- *         any keeper can call triggerParametricClaim(policyId) — no
- *         human claim filing required.
- *
- * @dev    Oracle: Chainlink AggregatorV3Interface.
- *         In hardhat / localcofhe: deploy MockAggregator and call
- *         setOracle(mockAddr) after construction.
- *         FHE validates coverage on ciphertexts; committee quorum is
- *         still required before payout is published.
- */
 interface IAggregatorV3 {
     function latestRoundData() external view returns (
         uint80 roundId,

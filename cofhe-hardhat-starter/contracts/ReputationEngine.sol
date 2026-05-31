@@ -3,7 +3,6 @@ pragma solidity ^0.8.25;
 
 import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
-
 abstract contract ReputationEngine {
 
     //  Constants 
@@ -13,7 +12,7 @@ abstract contract ReputationEngine {
     mapping(address => euint64) private _encClaimHistory;
     mapping(address => bool)    private _histInit;
 
-    //  Internal API ─
+    //  Internal API 
 
     function _recordClaim(address holder) internal {
         _ensureInit(holder);

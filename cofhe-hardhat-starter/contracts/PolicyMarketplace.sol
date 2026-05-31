@@ -4,10 +4,6 @@ pragma solidity ^0.8.25;
 import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-/**
- * @title  PolicyMarketplace
- * @notice Peer-to-peer marketplace for ShieldFi Policy NFTs.
- */
 contract PolicyMarketplace {
 
     struct Listing {
@@ -34,7 +30,7 @@ contract PolicyMarketplace {
 
     IERC721 public immutable policyNFT;
 
-    //  Events ─
+    //  Events 
     event PolicyListed(uint256 indexed listingId, uint256 indexed policyId, address seller);
     event BidPlaced(uint256 indexed bidId, uint256 indexed listingId, address buyer, uint256 deposit);
     event MatchRequested(uint256 indexed listingId, uint256 indexed bidId);
@@ -42,7 +38,7 @@ contract PolicyMarketplace {
     event BidRefunded(uint256 indexed bidId, address buyer);
     event ListingCancelled(uint256 indexed listingId);
 
-    //  Errors ─
+    //  Errors 
     error NotSeller();
     error ListingNotActive();
     error BidAlreadySettled();
@@ -74,7 +70,7 @@ contract PolicyMarketplace {
         emit PolicyListed(listingId, policyId, msg.sender);
     }
 
-    //  Step 2: Bid ─
+    //  Step 2: Bid 
 
     function placeBid(uint256 listingId, InEuint64 calldata encBid)
         external payable
@@ -155,7 +151,7 @@ contract PolicyMarketplace {
         emit ListingCancelled(listingId);
     }
 
-    //  Views ─
+    //  Views 
 
     function getMatchHandle(uint256 listingId, uint256 bidId)
         external view
