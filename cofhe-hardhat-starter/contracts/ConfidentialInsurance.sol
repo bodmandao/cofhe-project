@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
 import "./InsuranceTypes.sol";
 import "./ActuarialEngine.sol";
-import "./CommitteeManager.sol";
+import "./GovernanceModule.sol";
 import "./ReputationEngine.sol";
 import "./ParametricInsurance.sol";
 
 
-contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ReputationEngine, ParametricInsurance, ERC721 {
+contract ConfidentialInsurance is ActuarialEngine, GovernanceModule, ReputationEngine, ParametricInsurance, ERC721 {
     using Strings for uint256;
 
     //  Constants
@@ -233,8 +233,8 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ReputationE
 
         // Three-gate FHE validity circuit
         ebool amountValid   = FHE.lte(claimAmount, policies[policyId].encryptedCoverage);
-        ebool severityValid = FHE.gte(severity,    FHE.asEuint64(MIN_SEVERITY));
-        ebool fraudValid    = FHE.lte(fraudScore,  FHE.asEuint64(FRAUD_THRESHOLD));
+        ebool severityValid = FHE.gte(severity,    FHE.asEuint64(governableMinSeverity));
+        ebool fraudValid    = FHE.lte(fraudScore,  FHE.asEuint64(governableFraudThreshold));
         ebool isValidBool   = FHE.and(FHE.and(amountValid, severityValid), fraudValid);
         euint8 isValid      = FHE.select(isValidBool, FHE.asEuint8(uint8(1)), FHE.asEuint8(uint8(0)));
 
@@ -355,8 +355,8 @@ contract ConfidentialInsurance is ActuarialEngine, CommitteeManager, ReputationE
         euint64 fraudScore  = FHE.asEuint64(0);
 
         ebool amountValid   = FHE.lte(claimAmount, p.encryptedCoverage);
-        ebool severityValid = FHE.gte(severity, FHE.asEuint64(MIN_SEVERITY));
-        ebool fraudValid    = FHE.lte(fraudScore, FHE.asEuint64(FRAUD_THRESHOLD));
+        ebool severityValid = FHE.gte(severity, FHE.asEuint64(governableMinSeverity));
+        ebool fraudValid    = FHE.lte(fraudScore, FHE.asEuint64(governableFraudThreshold));
         ebool isValidBool   = FHE.and(FHE.and(amountValid, severityValid), fraudValid);
         euint8 isValid      = FHE.select(isValidBool, FHE.asEuint8(1), FHE.asEuint8(0));
 
