@@ -10,16 +10,6 @@ import "@fhenixprotocol/cofhe-contracts/FHE.sol";
  *         submit an encrypted capacity commitment; FHE.add accumulates the total;
  *         FHE.lte(encFilled, targetCapacity) reveals whether a bid fits — no
  *         underwriter ever sees competing bids.
- *
- * @dev    Auction flow:
- *           1. createTranche(riskTier, targetCapacity)       — committee owner
- *           2. placeBid(trancheId, encCapacity) payable      — underwriter + ETH collateral
- *           3. requestFillReveal(trancheId, bidId)           — allowPublic on match handle
- *           4. Off-chain: CoFHE SDK decryptForTx
- *           5. settleBid(trancheId, bidId, plaintext, sig)   — accept or refund
- *
- * FHE ops: asEuint64, add, lte, select, allowThis, allowSender, allowPublic,
- *          publishDecryptResult
  */
 contract UnderwriterAuction {
 
