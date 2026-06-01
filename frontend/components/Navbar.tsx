@@ -11,6 +11,8 @@ const NAV = [
   { href: "/policy/new",  label: "GET INSURED" },
   { href: "/claims/new",  label: "FILE CLAIM" },
   { href: "/marketplace", label: "MARKET" },
+  { href: "/underwriter", label: "UNDERWRITE" },
+  { href: "/governance",  label: "GOVERNANCE" },
   { href: "/explore",     label: "FHE EXPLORER" },
   { href: "/committee",   label: "COMMITTEE" },
 ];
